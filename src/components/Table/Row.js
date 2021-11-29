@@ -1,9 +1,15 @@
+import { useState } from 'react'
 import { checkHasOwnProp, toDateString } from 'utils'
+import SwitchButton from '../SwitchButton'
 import collapse from 'assets/imgs/Collapse.png'
+import expand from 'assets/imgs/Expand.png'
 import plus from 'assets/imgs/Plus.png'
-// import expand from 'assets/imgs/Expand.png'
+import minus from 'assets/imgs/Minus.png'
+import { TYPE } from '../../constants'
 
-const Row = ({ data, row }) => {
+const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
+  const [isExpand, setIsExpand] = useState(false)
+  //   const isExpand = data.expand
   let result = []
   if (checkHasOwnProp(data, 'title_id')) {
     result = row.map(({ className, name }) => {
@@ -11,10 +17,14 @@ const Row = ({ data, row }) => {
         case 'id':
           return (
             <div className={`${className} relative`}>
-              {data.content_type === 'Movie' ? null : (
+              {data.content_type === TYPE.MOVIE ? null : (
                 <img
-                  src={collapse}
+                  src={isExpand ? expand : collapse}
                   className='absolute left-[-20px] w-[10px] h-[8px] cursor-pointer'
+                  onClick={() => {
+                    handleExpand({ idx, type: TYPE.SERIES, id: data.title_id })
+                    setIsExpand(prev => !prev)
+                  }}
                 ></img>
               )}
               {data.title_id}
@@ -31,7 +41,7 @@ const Row = ({ data, row }) => {
         case 'season':
           return (
             <div className={className}>
-              {data.content_type === 'Movie' ? '-' : data.seasons.length}
+              {data.content_type === TYPE.MOVIE ? '-' : data.seasons.length}
             </div>
           )
         case 'published':
@@ -43,11 +53,30 @@ const Row = ({ data, row }) => {
         case 'episode':
           return (
             <div className={className}>
-              {data.content_type === 'Movie' ? '-' : data.episode_count}
+              {data.content_type === TYPE.MOVIE ? '-' : data.episode_count}
             </div>
           )
         case 'programmable':
-          return <div className={className}>{`${data.activate}`}</div>
+          return (
+            <div className={className}>
+              {
+                <SwitchButton
+                  status={data.activate}
+                  handleClick={() =>
+                    handleStatus({
+                      idx,
+                      type:
+                        data.content_type === TYPE.MOVIE
+                          ? TYPE.MOVIE
+                          : TYPE.SERIES,
+                      id: data.title_id,
+                      status: !data.activate,
+                    })
+                  }
+                />
+              }
+            </div>
+          )
 
         default:
           return <div />
@@ -58,16 +87,28 @@ const Row = ({ data, row }) => {
       switch (name) {
         case 'id':
           return (
-            <div className={`${className} relative`}>
+            <div className={`${className} relative translate-x-6`}>
               <img
-                src={plus}
+                src={isExpand ? minus : plus}
                 className='absolute w-[12px] h-[12px] left-[-20px] cursor-pointer'
+                onClick={() => {
+                  handleExpand({
+                    idx,
+                    type: TYPE.SEASON,
+                    id: data.season_id,
+                  })
+                  setIsExpand(prev => !prev)
+                }}
               ></img>
               {data.season_id}
             </div>
           )
         case 'title-name':
-          return <div className={className}>{data.season_name}</div>
+          return (
+            <div className={`${className} translate-x-6`}>
+              {data.season_name}
+            </div>
+          )
         case 'type':
           return <div className={className}>Season</div>
         case 'season':
@@ -81,7 +122,23 @@ const Row = ({ data, row }) => {
             </div>
           )
         case 'programmable':
-          return <div className={className}>{`${data.activate}`}</div>
+          return (
+            <div className={className}>
+              {
+                <SwitchButton
+                  status={data.activate}
+                  handleClick={() =>
+                    handleStatus({
+                      idx,
+                      type: TYPE.SEASON,
+                      id: data.season_id,
+                      status: !data.activate,
+                    })
+                  }
+                />
+              }
+            </div>
+          )
 
         default:
           return <div />
@@ -91,9 +148,17 @@ const Row = ({ data, row }) => {
     result = row.map(({ name, className }) => {
       switch (name) {
         case 'id':
-          return <div className={className}>{data.episode_id}</div>
+          return (
+            <div className={`${className} translate-x-9`}>
+              {data.episode_id}
+            </div>
+          )
         case 'title-name':
-          return <div className={className}>{data.episode_name}</div>
+          return (
+            <div className={`${className} translate-x-9`}>
+              {data.episode_name}
+            </div>
+          )
         case 'type':
           return <div className={className}>Episode</div>
         case 'season':
@@ -107,7 +172,23 @@ const Row = ({ data, row }) => {
             </div>
           )
         case 'programmable':
-          return <div className={className}>{`${data.activate}`}</div>
+          return (
+            <div className={className}>
+              {
+                <SwitchButton
+                  status={data.activate}
+                  handleClick={() =>
+                    handleStatus({
+                      idx,
+                      type: TYPE.EPISODE,
+                      id: data.episode_id,
+                      status: !data.activate,
+                    })
+                  }
+                />
+              }
+            </div>
+          )
 
         default:
           return <div />
@@ -115,8 +196,24 @@ const Row = ({ data, row }) => {
     })
   }
 
+  let show = true
+  if (data.hidden) show = false
+  else if (
+    data.content_type !== TYPE.MOVIE &&
+    data.content_type !== TYPE.SERIES &&
+    !data.expand
+  ) {
+    show = false
+  }
+
   return (
-    <div className='flex flex-grow items-center justify-start hover:bg-[#4EA0DD1A] bg-opacity-10 w-full pl-8 px-[11px]'>
+    <div
+      className={`${
+        show
+          ? 'opacity-100 visible h-[30px]'
+          : 'transition opacity-0 h-0 invisible'
+      } transition duration-500 linear flex flex-grow items-center justify-start hover:bg-[#4EA0DD1A] bg-opacity-10 w-full pl-8 px-[11px]`}
+    >
       {result}
     </div>
   )

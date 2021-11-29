@@ -21,6 +21,7 @@ module.exports = {
   plugins: ['react-hooks'],
   ignorePatterns: ['**/icons/*', '*.css'],
   rules: {
+    'no-unused-vars': 'off',
     'react/prop-types': 'off', // temp set to off
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': [
