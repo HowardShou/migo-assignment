@@ -18,7 +18,7 @@ const headerConfig = [
   { name: 'Season', className: 'min-w-[3.54%] mr-4' },
   { name: 'Episode', className: 'min-w-[4.32%] mr-4' },
   { name: 'Published', className: 'flex-grow' },
-  { name: 'Programmable', className: 'min-w-[10%]' },
+  { name: 'Programmable', className: 'min-w-[12%]' },
 ]
 
 const rowConfig = [
@@ -36,7 +36,10 @@ const rowConfig = [
   { name: 'season', className: 'min-w-[3.54%] mr-4 text-xs leading-[14px]' },
   { name: 'episode', className: 'min-w-[4.32%] mr-4 text-xs leading-[14px]' },
   { name: 'published', className: 'flex-grow text-xs leading-[14px]' },
-  { name: 'programmable', className: 'min-w-[10%]' },
+  {
+    name: 'programmable',
+    className: 'flex items-center min-w-[12%] text-xs leading-[14px]',
+  },
 ]
 
 const genIdIndexMap = data => {
@@ -112,11 +115,15 @@ const Inventory = () => {
           break
         case TYPE.SERIES: {
           _tb[idIndexMap[payload.id]].activate = payload.status
+
+          _tb[idIndexMap[payload.id]].selectAll = payload.status
+
           _tb[idIndexMap[payload.id]].seasons = _tb[
             idIndexMap[payload.id]
           ].seasons.map(item => ({
             ...item,
             activate: payload.status,
+            selectAll: payload.status,
             episodes: item.episodes.map(ep => ({
               ...ep,
               activate: payload.status,
@@ -129,13 +136,21 @@ const Inventory = () => {
           // handle parent
           if (payload.status) {
             let allInactive = true
+            let isAllActive = []
             for (const season of _tb[parentIdx].seasons) {
+              if (season.season_id === payload.id) continue
+              else isAllActive.push(season.activate)
+
               if (season.activate) {
                 allInactive = false
                 break
               }
             }
             if (allInactive) _tb[parentIdx].activate = payload.status
+
+            if (isAllActive.every(item => item.activate === true)) {
+              _tb[parentIdx].selectAll = true
+            }
           } else {
             let allInactive = true
             for (const season of _tb[parentIdx].seasons) {
@@ -146,10 +161,14 @@ const Inventory = () => {
               }
             }
             if (allInactive) _tb[parentIdx].activate = payload.status
+            _tb[parentIdx].selectAll = false
           }
 
           // season itself
           _tb[parentIdx].seasons[payload.idx].activate = payload.status
+          if (payload.status)
+            _tb[parentIdx].seasons[payload.idx].selectAll = payload.status
+          else _tb[parentIdx].seasons[payload.idx].selectAll = false
 
           // handle ep
           _tb[parentIdx].seasons[payload.idx].episodes = _tb[parentIdx].seasons[
@@ -169,13 +188,27 @@ const Inventory = () => {
 
             if (payload.status) {
               let allInactive = true
+
+              let isAllActive = []
               for (const season of _tb[titleIdx].seasons) {
+                isAllActive.push(season.activate)
+
                 if (season.activate) {
                   allInactive = false
                   break
                 }
               }
-              if (allInactive) _tb[titleIdx].activate = payload.status
+
+              if (allInactive) _tb[titleIdx].activate = false
+
+              if (isAllActive.every(item => item.activate === true)) {
+                _tb[titleIdx].selectAll = true
+                _tb[titleIdx].activate = true
+                _tb[titleIdx].seasons = _tb[titleIdx].seasons.map(item => ({
+                  ...item,
+                  selectAll: true,
+                }))
+              }
             } else {
               let allInactive = true
               for (const season of _tb[titleIdx].seasons) {

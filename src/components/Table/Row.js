@@ -59,7 +59,7 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
         case 'programmable':
           return (
             <div className={className}>
-              {
+              <div className='mr-4'>
                 <SwitchButton
                   status={data.activate}
                   handleClick={() =>
@@ -74,7 +74,14 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
                     })
                   }
                 />
-              }
+              </div>
+              <span>
+                {data.content_type === TYPE.MOVIE
+                  ? 'Single Movie'
+                  : data.selectAll
+                  ? 'All Season'
+                  : ''}
+              </span>
             </div>
           )
 
@@ -124,7 +131,7 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
         case 'programmable':
           return (
             <div className={className}>
-              {
+              <div className='mr-4'>
                 <SwitchButton
                   status={data.activate}
                   handleClick={() =>
@@ -136,7 +143,8 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
                     })
                   }
                 />
-              }
+              </div>
+              <span>{data.selectAll ? 'All Episodes' : ''}</span>
             </div>
           )
 
@@ -174,7 +182,7 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
         case 'programmable':
           return (
             <div className={className}>
-              {
+              <div className='mr-4'>
                 <SwitchButton
                   status={data.activate}
                   handleClick={() =>
@@ -186,7 +194,8 @@ const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
                     })
                   }
                 />
-              }
+              </div>
+              <span>{'Per Episodes'}</span>
             </div>
           )
 
