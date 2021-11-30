@@ -9,7 +9,6 @@ import { TYPE } from '../../constants'
 
 const Row = ({ data, row, idx, handleExpand, handleStatus }) => {
   const [isExpand, setIsExpand] = useState(false)
-  //   const isExpand = data.expand
   let result = []
   if (checkHasOwnProp(data, 'title_id')) {
     result = row.map(({ className, name }) => {
