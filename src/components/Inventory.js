@@ -115,7 +115,6 @@ const Inventory = () => {
           break
         case TYPE.SERIES: {
           _tb[idIndexMap[payload.id]].activate = payload.status
-
           _tb[idIndexMap[payload.id]].selectAll = payload.status
 
           _tb[idIndexMap[payload.id]].seasons = _tb[
@@ -132,46 +131,32 @@ const Inventory = () => {
           break
         }
         case TYPE.SEASON: {
-          const parentIdx = idIndexMap[payload.id].parentIdx
-          // handle parent
-          if (payload.status) {
-            let allInactive = true
-            let isAllActive = []
-            for (const season of _tb[parentIdx].seasons) {
-              if (season.season_id === payload.id) continue
-              else isAllActive.push(season.activate)
-
-              if (season.activate) {
-                allInactive = false
-                break
-              }
-            }
-            if (allInactive) _tb[parentIdx].activate = payload.status
-
-            if (isAllActive.every(item => item.activate === true)) {
-              _tb[parentIdx].selectAll = true
-            }
-          } else {
-            let allInactive = true
-            for (const season of _tb[parentIdx].seasons) {
-              if (season.season_id === payload.id) continue
-              if (season.activate) {
-                allInactive = false
-                break
-              }
-            }
-            if (allInactive) _tb[parentIdx].activate = payload.status
-            _tb[parentIdx].selectAll = false
-          }
+          const titleIdx = idIndexMap[payload.id].parentIdx
 
           // season itself
-          _tb[parentIdx].seasons[payload.idx].activate = payload.status
-          if (payload.status)
-            _tb[parentIdx].seasons[payload.idx].selectAll = payload.status
-          else _tb[parentIdx].seasons[payload.idx].selectAll = false
+          _tb[titleIdx].seasons[payload.idx].activate = payload.status
 
-          // handle ep
-          _tb[parentIdx].seasons[payload.idx].episodes = _tb[parentIdx].seasons[
+          if (payload.status) {
+            _tb[titleIdx].seasons[payload.idx].selectAll = payload.status
+
+            // 開啟一個season，一定會讓title也開啟
+            _tb[titleIdx].activate = true
+            // 如果所有season都是開啟狀態，要讓title顯示文字
+            if (_tb[titleIdx].seasons.every(item => item.activate)) {
+              _tb[titleIdx].selectAll = true
+            }
+          } else {
+            // 拔掉一個season，同時會讓該season與父曾title都變成非全選狀態
+            _tb[titleIdx].seasons[payload.idx].selectAll = false
+            _tb[titleIdx].selectAll = false
+            if (_tb[titleIdx].seasons.every(item => !item.activate)) {
+              // 如果所有season都是關閉狀態，要讓title也關閉
+              _tb[titleIdx].activate = false
+            }
+          }
+
+          // 開啟一個season會一併開啟所有ep
+          _tb[titleIdx].seasons[payload.idx].episodes = _tb[titleIdx].seasons[
             payload.idx
           ].episodes.map(ep => ({
             ...ep,
@@ -186,69 +171,48 @@ const Inventory = () => {
             const seasonIdx = idIndexMap[payload.id].parentIdx
             const titleIdx = idIndexMap[payload.id].grandParentIdx
 
-            if (payload.status) {
-              let allInactive = true
-
-              let isAllActive = []
-              for (const season of _tb[titleIdx].seasons) {
-                isAllActive.push(season.activate)
-
-                if (season.activate) {
-                  allInactive = false
-                  break
-                }
-              }
-
-              if (allInactive) _tb[titleIdx].activate = false
-
-              if (isAllActive.every(item => item.activate === true)) {
-                _tb[titleIdx].selectAll = true
-                _tb[titleIdx].activate = true
-                _tb[titleIdx].seasons = _tb[titleIdx].seasons.map(item => ({
-                  ...item,
-                  selectAll: true,
-                }))
-              }
-            } else {
-              let allInactive = true
-              for (const season of _tb[titleIdx].seasons) {
-                if (season.season_id === payload.id) continue
-                if (season.activate) {
-                  allInactive = false
-                  break
-                }
-              }
-              if (allInactive) _tb[titleIdx].activate = payload.status
-            }
-
-            // handle season
-            if (payload.status) {
-              let allInactive = true
-              for (const ep of _tb[titleIdx].seasons[seasonIdx].episodes) {
-                if (ep.activate) {
-                  allInactive = false
-                  break
-                }
-              }
-              if (allInactive)
-                _tb[titleIdx].seasons[seasonIdx].activate = payload.status
-            } else {
-              let allInactive = true
-              for (const ep of _tb[titleIdx].seasons[seasonIdx].episodes) {
-                if (ep.episode_id === payload.id) continue
-                if (ep.activate) {
-                  allInactive = false
-                  break
-                }
-              }
-              if (allInactive) {
-                _tb[titleIdx].seasons[seasonIdx].activate = payload.status
-              }
-            }
-
             // ep itself
             _tb[titleIdx].seasons[seasonIdx].episodes[idx].activate =
               payload.status
+
+            if (payload.status) {
+              // seasons
+              // 當前的season一定會acitvate
+              _tb[titleIdx].seasons[seasonIdx].activate = true
+              //  若全部的ep都activate，season秀文字
+              if (
+                _tb[titleIdx].seasons[seasonIdx].episodes.every(
+                  item => item.activate === true
+                )
+              ) {
+                _tb[titleIdx].seasons[seasonIdx].selectAll = true
+              }
+
+              // titles
+              _tb[titleIdx].activate = true //開一個子選項，所有父選項一定會打開activate，只是不一定會是全選狀態
+
+              if (_tb[titleIdx].seasons.every(item => item.activate)) {
+                _tb[titleIdx].selectAll = true
+              }
+            } else {
+              // 拔掉一個ep，至少會讓父層的season變成非全選(但不一定會取消其activate狀態)
+              _tb[titleIdx].seasons[seasonIdx].selectAll = false
+
+              // 拔掉的EP剛好導致season沒有任何選項被選到，此時才取消父層activate
+              if (
+                _tb[titleIdx].seasons[seasonIdx].episodes.every(
+                  item => !item.activate
+                )
+              ) {
+                // 由於某個season被取消activate了，勢必會導致title層不會在全選狀態
+                _tb[titleIdx].seasons[seasonIdx].activate = false
+                _tb[titleIdx].selectAll = false
+                if (_tb[titleIdx].seasons.every(item => !item.activate)) {
+                  // 如果所有season都是關閉狀態，要讓title也關閉
+                  _tb[titleIdx].activate = false
+                }
+              }
+            }
           }
           break
 
